@@ -1,4 +1,4 @@
-package ryan.com.coba;
+package hendro.com.accelero;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

@@ -1,4 +1,4 @@
-package ryan.com.coba;
+package hendro.com.accelero.activity;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -11,34 +11,23 @@ import android.os.Bundle;
 import android.app.Activity;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.util.Log;
-import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.Manifest;
-import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 
+import hendro.com.accelero.R;
 import weka.classifiers.Classifier;
+import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.lazy.IBk;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -47,116 +36,89 @@ import weka.core.Instances;
 import weka.core.SerializationHelper;
 import weka.core.converters.ConverterUtils;
 
-import android.app.Activity;
-import android.os.Bundle;
-import android.view.View;
-import android.widget.EditText;
-import android.widget.Toast;
-
 import com.opencsv.CSVWriter;
 
 
-public class FungsiPredict extends Activity implements SensorEventListener {
+public class TestActivity extends Activity implements SensorEventListener {
 
 
     private SensorManager sensorManager;
     private File path;
-    private int activity;
     private static final int request = 1;
 
     private Sensor accel;
     private Sensor prox;
 
-    public IBk model;
+    public NaiveBayes model;
     private double aktivitas;
-
-    TextView viewx;
-    TextView viewy;
-    TextView viewz;
-    TextView cond;
 
     private float xVal, yVal, zVal;
     private ArrayList<Float> X, Y, Z;
-    private int window = 20;
+    private int window = 16;
     private boolean started = false;
-    private boolean stopped = true;
-    private String attr = "MeanX;MeanY;MeanZ;StdDevX;StdDevY;StdDevZ;MaxX;MaxY;MaxZ;MinX;MinY;MinZ";
 
     float currentDis;
-    String sx, sy, sz, def;
+    String sx, sy, sz;
 
     CSVWriter writer;
 
+    protected Instance instance;
+
     private Instances data;
-    private Classifier knn;
-    private ArrayList<String> kelas;
-    private static final int REQUEST_EXTERNAL_STORAGE = 1;
     private static String[] permission = {
             Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
 
+    TextView tv_xValue;
+    TextView tv_yValue;
+    TextView tv_zValue;
+    Button btn_start;
+    Button btn_stop;
+    TextView tv_testStatus;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_predict);
+        setContentView(R.layout.activity_test);
 
         if (shouldAskPermissions()) {
             verifyStoragePermissions(this);
         }
 
-        Button btn = (Button)findViewById(R.id.button);
-
         path = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_DOWNLOADS);
 
-
-        cond = (TextView) findViewById(R.id.textView1);
-        viewx = (TextView) findViewById(R.id.textView2);
-        viewy = (TextView) findViewById(R.id.textView3);
-        viewz = (TextView) findViewById(R.id.textView4);
+        tv_xValue = (TextView)findViewById(R.id.tv_xValue);
+        tv_yValue = (TextView)findViewById(R.id.tv_yValue);
+        tv_zValue = (TextView)findViewById(R.id.tv_zValue);
+        tv_testStatus = (TextView)findViewById(R.id.tv_testStatus);
+        btn_start = (Button)findViewById(R.id.btnStart);
+        btn_stop = (Button)findViewById(R.id.btnStop);
 
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
 
         accel = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         prox = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
 
-        sensorManager.registerListener(this, accel,
-                SensorManager.SENSOR_DELAY_NORMAL);
-
-        sensorManager.registerListener(this, prox,
-                SensorManager.SENSOR_DELAY_NORMAL);
-
-        btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-
-            public void onClick(View v) {
-                Intent donat = new Intent(FungsiPredict.this, FungsiUtama.class); //intent kusus untuk pindah activity
-                startActivity(donat);
-            }
-
-
-        });
-
         X = new ArrayList<Float>();
         Y = new ArrayList<Float>();
         Z = new ArrayList<Float>();
 
-        Classifier knn = new IBk(3);
+        Classifier bayes = new NaiveBayes();
         try{
-            ConverterUtils.DataSource source = new ConverterUtils.DataSource(path + File.separator + "acc.csv"); //dataset
+            ConverterUtils.DataSource source = new ConverterUtils.DataSource(path + File.separator + "dataset.csv"); //dataset
             data = source.getDataSet();
             if (data.classIndex() == -1)
-                data.setClassIndex(data.numAttributes() - 1); //set baris pertama sendiri buat nama atribut
-            knn.buildClassifier(data);
+                data.setClassIndex(data.numAttributes() - 1);
+            bayes.buildClassifier(data);
 
             ObjectOutputStream oos = new ObjectOutputStream(
-                    new FileOutputStream (path + File.separator + "model"));
-            oos.writeObject(knn);
+                    new FileOutputStream (path + File.separator + "bayes-model"));
+            oos.writeObject(bayes);
             oos.flush();
             oos.close();
 
-            model = (IBk) SerializationHelper.read(new FileInputStream(path + File.separator + "model"));
+            model = (NaiveBayes) SerializationHelper.read(new FileInputStream(path + File.separator + "bayes-model"));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -164,9 +126,34 @@ public class FungsiPredict extends Activity implements SensorEventListener {
 
         Attribute att = data.classAttribute();
         for(int i = 0; i < data.numClasses();i++) {
-            Log.d("kungga",att.value(i));
+            Log.d("test",att.value(i));
         }
 
+        btnOnClik(this);
+    }
+
+    protected void btnOnClik(final SensorEventListener listener){
+        btn_start.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sensorManager.registerListener(listener, prox,
+                        SensorManager.SENSOR_DELAY_NORMAL);
+            }
+        });
+
+        btn_stop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    aktivitas = model.classifyInstance(instance);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                tv_testStatus.setText("You are " + data.classAttribute().value((int)aktivitas) + " now");
+
+                sensorManager.unregisterListener(listener, prox);
+            }
+        });
     }
 
 
@@ -185,14 +172,17 @@ public class FungsiPredict extends Activity implements SensorEventListener {
             yVal = event.values[1];
             zVal = event.values[2];
 
-            sx = "X Value : <font color = '#800080'> " + xVal + "</font>";
-            sy = "Y Value : <font color = '#800080'> " + yVal + "</font>";
-            sz = "Z Value : <font color = '#800080'> " + zVal + "</font>";
-
             if (started) {
+                tv_xValue.setText(String.valueOf(xVal));
+                tv_yValue.setText(String.valueOf(yVal));
+                tv_zValue.setText(String.valueOf(zVal));
                 X.add(xVal);
                 Y.add(yVal);
                 Z.add(zVal);
+            } else {
+                tv_xValue.setText("X Axis Value");
+                tv_yValue.setText("Y Axis Value");
+                tv_zValue.setText("Z Axis Value");
             }
 
             if (X.size() == window) {
@@ -221,51 +211,21 @@ public class FungsiPredict extends Activity implements SensorEventListener {
                 stdDevZ = (float) Math.sqrt(stdZ / (window - 1));
 
                 double[] val = new double[] {meanX, meanY, meanZ, stdDevX, stdDevY, stdDevZ, Collections.max(X), Collections.max(Y), Collections.max(Z), Collections.min(X),  Collections.min(Y), Collections.min(Z)};
-                Instance instance = new DenseInstance(1.0, val); //konvert ke instance dulu biar bisa dicompare sama dataset
+                instance = new DenseInstance(window, val);
                 instance.setDataset(data);
-
-                try {
-                    aktivitas = model.classifyInstance(instance);
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                Log.d("donat",String.valueOf(aktivitas));
-                cond.setText(data.classAttribute().value((int)aktivitas)); //print teks dari kelas yang tadinya hasilnya angka jadi diambil teksnya
-
 
                 X.clear();
                 Y.clear();
                 Z.clear();
             }
-
         }
 
         if (event.sensor.getType() == Sensor.TYPE_PROXIMITY) {
-
-
             currentDis = event.values[0];
-
-
             if (currentDis < 5) {
-
                 started = true;
-
-                viewx.setText(Html.fromHtml(sx));
-                viewy.setText(Html.fromHtml(sy));
-                viewz.setText(Html.fromHtml(sz));
-
-
             } else {
-
                 started = false;
-
-                viewx.setText(getString(R.string.textView2));
-                viewy.setText(getString(R.string.textView3));
-                viewz.setText(getString(R.string.textView4));
-                //cond.setText(getString(R.string.textView1));
-
             }
         }
 

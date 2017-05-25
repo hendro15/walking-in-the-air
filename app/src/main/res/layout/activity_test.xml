@@ -1,0 +1,80 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="hendro.com.accelero.activity.TestActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="20dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_axis"
+                style="@style/AxisValue"
+                android:text="X-Axis" />
+
+            <TextView
+                android:id="@+id/tv_xValue"
+                style="@style/AxisValue"
+                android:text="VALUE" />
+
+            <TextView
+                android:id="@+id/y_axis"
+                style="@style/AxisValue"
+                android:text="Y-Axis" />
+
+            <TextView
+                android:id="@+id/tv_yValue"
+                style="@style/AxisValue"
+                android:text="VALUE" />
+
+            <TextView
+                android:id="@+id/z_axis"
+                style="@style/AxisValue"
+                android:text="Z-Axis" />
+
+            <TextView
+                android:id="@+id/tv_zValue"
+                style="@style/AxisValue"
+                android:text="VALUE" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_testStatus"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="2"
+            android:gravity="center"
+            android:text="STATUS"
+            android:textColor="@android:color/holo_red_light"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnStart"
+            style="@style/MyButton"
+            android:text="START" />
+
+        <Button
+            android:id="@+id/btnStop"
+            style="@style/MyButton"
+            android:text="STOP" />
+    </LinearLayout>
+
+</FrameLayout>
